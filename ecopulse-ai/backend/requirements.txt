@@ -1,0 +1,23 @@
+# EcoPulse AI — Backend Dependencies
+# Install: pip install -r requirements.txt
+
+# ── Web framework ─────────────────────────────────────────────────────────────
+fastapi==0.115.0
+uvicorn[standard]==0.30.6
+
+# ── HTTP client (async) ───────────────────────────────────────────────────────
+httpx==0.27.2
+
+# ── Google Trends (unofficial, free) ─────────────────────────────────────────
+pytrends==4.9.2
+
+# ── Data processing ───────────────────────────────────────────────────────────
+pandas==2.2.3
+numpy==2.1.1
+
+# ── Environment variable management ──────────────────────────────────────────
+python-dotenv==1.0.1
+
+# ── Optional: data caching / persistence ─────────────────────────────────────
+# redis==5.0.8      # uncomment if you want Redis caching
+# sqlalchemy==2.0.35  # uncomment for SQLite time-series storage

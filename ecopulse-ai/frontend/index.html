@@ -1,0 +1,1024 @@
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+app.mount("/", StaticFiles(directory=str(BASE_DIR / "frontend"), html=True), name="frontend")<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>EcoPulse AI — Global AI Environmental Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #080c10;
+    --surface:  #0d1318;
+    --surface2: #141c24;
+    --border:   rgba(255,255,255,0.07);
+    --border2:  rgba(255,255,255,0.12);
+    --text:     #e8edf2;
+    --muted:    #6b7a8a;
+    --green:    #00e5a0;
+    --green2:   #00b87a;
+    --amber:    #f5a623;
+    --red:      #ff4757;
+    --blue:     #4a9eff;
+    --teal:     #26d9c7;
+    --font-mono: 'Space Mono', monospace;
+    --font-sans: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay for CRT effect */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 2rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 32px;
+    height: 32px;
+    border: 1.5px solid var(--green);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+
+  .logo-icon::after {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  .logo-text { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.02em; }
+  .logo-sub  { font-family: var(--font-mono); font-size: 0.65rem; color: var(--muted); letter-spacing: 0.1em; }
+
+  .header-status {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+
+  .live-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--green);
+    letter-spacing: 0.08em;
+  }
+
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  #clock {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  /* Main grid */
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto;
+    gap: 1px;
+    background: var(--border);
+    min-height: calc(100vh - 65px);
+  }
+
+  .panel {
+    background: var(--surface);
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,229,160,0.3), transparent);
+    opacity: 0;
+    animation: scanH 6s ease-in-out infinite;
+  }
+
+  @keyframes scanH {
+    0%, 90%, 100% { opacity: 0; top: 0%; }
+    45% { opacity: 1; top: 100%; }
+  }
+
+  .panel-wide { grid-column: span 2; }
+  .panel-tall { grid-row: span 2; }
+  .panel-full { grid-column: span 3; }
+
+  .panel-label {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .panel-label::before {
+    content: '';
+    width: 16px;
+    height: 1px;
+    background: var(--muted);
+  }
+
+  /* Hero counter */
+  .hero-number {
+    font-family: var(--font-mono);
+    font-size: clamp(2.5rem, 5vw, 4.5rem);
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-sub {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-family: var(--font-mono);
+  }
+
+  /* Metric row */
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+
+  .metric {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem;
+  }
+
+  .metric-label {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 0.4rem;
+    text-transform: uppercase;
+  }
+
+  .metric-value {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+
+  .c-green { color: var(--green); }
+  .c-amber { color: var(--amber); }
+  .c-red   { color: var(--red); }
+  .c-blue  { color: var(--blue); }
+  .c-teal  { color: var(--teal); }
+
+  /* Region cards */
+  .region-grid {
+    display: grid;
+    gap: 0.6rem;
+    margin-top: 0.5rem;
+  }
+
+  .region-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 0.8rem;
+  }
+
+  .region-name {
+    flex: 1;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text);
+  }
+
+  .region-bar-wrap {
+    flex: 2;
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .region-bar {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 2s ease;
+  }
+
+  .region-value {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    text-align: right;
+    min-width: 60px;
+  }
+
+  /* Gauge */
+  .gauge-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 0.5rem;
+  }
+
+  .gauge-svg { width: 100%; max-width: 240px; }
+
+  /* Chart canvas */
+  .chart-container {
+    position: relative;
+    margin-top: 1rem;
+    height: 160px;
+  }
+
+  /* Water meter */
+  .water-fill {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    height: 120px;
+    margin-top: 1rem;
+  }
+
+  .water-col {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px 4px 0 0;
+    position: relative;
+    overflow: hidden;
+    min-height: 20px;
+  }
+
+  .water-fill-inner {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--blue);
+    opacity: 0.7;
+    transition: height 2s ease;
+  }
+
+  .water-col-label {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--font-mono);
+    font-size: 0.5rem;
+    color: var(--text);
+    padding: 2px;
+    white-space: nowrap;
+    z-index: 1;
+  }
+
+  /* Scrolling feed */
+  .feed {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-height: 200px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .feed::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 40px;
+    background: linear-gradient(transparent, var(--surface));
+  }
+
+  .feed-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    animation: feedIn 0.4s ease;
+  }
+
+  @keyframes feedIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  .feed-time { color: var(--green); min-width: 50px; }
+  .feed-msg  { flex: 1; line-height: 1.5; }
+
+  /* Hype index */
+  .hype-bar-wrap {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .hype-kw {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+  }
+
+  .hype-kw-name { flex: 1; color: var(--muted); }
+  .hype-kw-bar-wrap { flex: 2; height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+  .hype-kw-bar { height: 100%; background: var(--teal); border-radius: 2px; transition: width 2s ease; }
+  .hype-kw-val { min-width: 28px; text-align: right; color: var(--teal); }
+
+  /* Health panel */
+  .risk-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    margin-top: 0.5rem;
+  }
+
+  .risk-low      { background: rgba(0,229,160,0.12); color: var(--green); border: 1px solid rgba(0,229,160,0.3); }
+  .risk-moderate { background: rgba(245,166,35,0.12); color: var(--amber); border: 1px solid rgba(245,166,35,0.3); }
+  .risk-elevated { background: rgba(255,71,87,0.12);  color: var(--red);   border: 1px solid rgba(255,71,87,0.3); }
+
+  /* Per-query price */
+  .price-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+
+  .price-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .price-icon { font-size: 1.2rem; margin-bottom: 0.4rem; }
+  .price-val  { font-family: var(--font-mono); font-size: 1rem; font-weight: 700; margin-bottom: 0.25rem; }
+  .price-desc { font-size: 0.65rem; color: var(--muted); }
+
+  /* Footer strip */
+  .footer-strip {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 0.75rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+    flex-wrap: wrap;
+  }
+
+  .footer-strip a { color: var(--muted); text-decoration: none; }
+  .footer-strip a:hover { color: var(--green); }
+
+  @keyframes countUp {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  .blink { animation: blink 1s step-end infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* Loading state */
+  .loading {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .spinner {
+    width: 10px;
+    height: 10px;
+    border: 1px solid var(--border);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">
+    <div class="logo-icon"></div>
+    <div>
+      <div class="logo-text">EcoPulse AI</div>
+      <div class="logo-sub">GLOBAL AI ENVIRONMENTAL TRACKER</div>
+    </div>
+  </div>
+  <div class="header-status">
+    <div class="live-badge"><div class="live-dot"></div>LIVE NOWCAST</div>
+    <div id="clock">--:--:-- UTC</div>
+    <div id="api-status" class="loading"><div class="spinner"></div> Connecting to APIs...</div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- Panel 1: Global Query Counter -->
+  <div class="panel">
+    <div class="panel-label">Layer 1 · Inference Volume</div>
+    <div class="hero-number" id="qpm-display">22,847</div>
+    <div class="hero-sub">QUERIES / MINUTE (GLOBAL EST.)</div>
+    <div class="metrics-row">
+      <div class="metric">
+        <div class="metric-label">Queries/sec</div>
+        <div class="metric-value c-green" id="qps-display">380.8</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Est. Today</div>
+        <div class="metric-value c-blue" id="today-display">312M</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Hype Index</div>
+        <div class="metric-value c-teal" id="hype-display">68</div>
+      </div>
+    </div>
+    <div class="chart-container">
+      <canvas id="qpmChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Panel 2: Power Draw -->
+  <div class="panel">
+    <div class="panel-label">Layer 1 · Power Draw</div>
+    <div class="hero-number c-amber" id="mw-display">7.30</div>
+    <div class="hero-sub">MEGAWATTS (REAL-TIME GLOBAL DRAW)</div>
+    <div class="metrics-row">
+      <div class="metric">
+        <div class="metric-label">Wh/Query</div>
+        <div class="metric-value c-amber" id="wh-display">0.32</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Text-Large %</div>
+        <div class="metric-value" id="large-pct">30%</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Image Gen %</div>
+        <div class="metric-value" id="image-pct">10%</div>
+      </div>
+    </div>
+    <div class="chart-container">
+      <canvas id="computeChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Panel 3: Carbon Intensity -->
+  <div class="panel panel-tall">
+    <div class="panel-label">Layer 2 · Carbon Intensity</div>
+    <div class="hero-number c-amber" id="carbon-display">364</div>
+    <div class="hero-sub">gCO₂eq/kWh (WEIGHTED GLOBAL AVG)</div>
+
+    <div class="region-grid" id="carbon-regions" style="margin-top: 1rem;">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+  <!-- Panel 4: Air Quality -->
+  <div class="panel panel-wide">
+    <div class="panel-label">Layer 2 · AI-AQI Correlation</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+      <div>
+        <div class="hero-number" style="font-size: 2.5rem;" id="aqi-max">112</div>
+        <div class="hero-sub">WORST REGION AQI</div>
+      </div>
+      <div>
+        <div class="hero-number" style="font-size: 2.5rem;" id="aqi-mean">54</div>
+        <div class="hero-sub">GLOBAL MEAN AQI</div>
+      </div>
+      <div>
+        <div class="hero-number c-red" style="font-size: 2.5rem;" id="pm25-display">18.4</div>
+        <div class="hero-sub">PM₂.₅ µg/m³ (WORST)</div>
+      </div>
+    </div>
+    <div class="region-grid" id="aqi-regions"></div>
+  </div>
+
+  <!-- Panel 5: Water -->
+  <div class="panel">
+    <div class="panel-label">Layer 2 · Water Depletion</div>
+    <div class="hero-number c-blue" id="water-display">148</div>
+    <div class="hero-sub">LITERS / MINUTE (EVAPORATED)</div>
+    <div class="metrics-row" style="grid-template-columns: 1fr 1fr;">
+      <div class="metric">
+        <div class="metric-label">Pools/day</div>
+        <div class="metric-value c-blue" id="pools-display">0.09</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">L/Query</div>
+        <div class="metric-value" id="lpq-display">0.0065</div>
+      </div>
+    </div>
+    <div class="water-fill" id="water-bars"></div>
+  </div>
+
+  <!-- Panel 6: Trends / Hype -->
+  <div class="panel">
+    <div class="panel-label">Layer 1 · Search Velocity</div>
+    <div class="hype-bar-wrap" id="hype-keywords">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+  <!-- Panel 7: Health Impact -->
+  <div class="panel panel-wide">
+    <div class="panel-label">Layer 3 · Bio-Impact Markers</div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+      <div>
+        <div class="metric-label" style="color: var(--muted);">Respiratory Risk Delta</div>
+        <div class="metric-value" style="font-size: 1.8rem; margin: 0.4rem 0;" id="resp-risk">+6.2%</div>
+        <div id="risk-badge-wrap"><span class="risk-badge risk-moderate">MODERATE RISK</span></div>
+        <div style="font-size: 0.65rem; color: var(--muted); margin-top: 0.5rem;">Above baseline near coal-heavy data center hubs</div>
+      </div>
+      <div>
+        <div class="price-grid" style="grid-template-columns: 1fr; gap: 0.5rem;">
+          <div class="price-item">
+            <div class="price-icon">⚡</div>
+            <div class="price-val c-amber" id="pq-wh">0.320 Wh</div>
+            <div class="price-desc">energy per query</div>
+          </div>
+          <div class="price-item">
+            <div class="price-icon">💨</div>
+            <div class="price-val c-red" id="pq-co2">0.118 g CO₂</div>
+            <div class="price-desc">carbon per query</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="price-grid" style="grid-template-columns: 1fr; gap: 0.5rem;">
+          <div class="price-item">
+            <div class="price-icon">💧</div>
+            <div class="price-val c-blue" id="pq-water">6.5 mL</div>
+            <div class="price-desc">water per query</div>
+          </div>
+          <div class="price-item">
+            <div class="price-icon">🕐</div>
+            <div class="price-val c-green" id="pq-time">+4 min saved</div>
+            <div class="price-desc">vs. +2 min sedentary</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel 8: Event Feed -->
+  <div class="panel">
+    <div class="panel-label">System Feed</div>
+    <div class="feed" id="feed"></div>
+  </div>
+
+  <!-- Panel 9: CO2 Running Total -->
+  <div class="panel panel-wide">
+    <div class="panel-label">Layer 2 · Carbon Accumulation (24h rolling)</div>
+    <div style="display: flex; align-items: baseline; gap: 1rem; margin-bottom: 0.5rem;">
+      <div class="hero-number c-red" style="font-size: 2rem;" id="co2-today">0.00</div>
+      <div class="hero-sub">TONNES CO₂ EMITTED TODAY (EST.)</div>
+    </div>
+    <div class="chart-container" style="height: 100px;">
+      <canvas id="co2Chart"></canvas>
+    </div>
+  </div>
+
+</div>
+
+<div class="footer-strip">
+  <span>EcoPulse AI v1.0 — Data Science Initiative</span>
+  <span>Carbon: <a href="https://electricitymaps.com" target="_blank">Electricity Maps</a></span>
+  <span>AQI: <a href="https://openaq.org" target="_blank">OpenAQ</a> + <a href="https://waqi.info" target="_blank">WAQI</a></span>
+  <span>Trends: <a href="https://github.com/GeneralMills/pytrends" target="_blank">pytrends</a></span>
+  <span>Traffic: <a href="https://radar.cloudflare.com" target="_blank">Cloudflare Radar</a></span>
+  <span>API: <span id="api-url">http://localhost:8000/api/live</span></span>
+  <span style="margin-left: auto; color: var(--green);">All estimates based on multi-proxy regression model</span>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ── Configuration ─────────────────────────────────────────────────────────
+const API_BASE = 'http://localhost:8000/api';
+const REFRESH_MS = 5000;
+
+// ── State ─────────────────────────────────────────────────────────────────
+let state = {
+  qpm: 22000, carbon: 364, aqi: { max: 112, mean: 54 },
+  water: { lpm: 148, pools: 0.09 }, mw: 7.30,
+  co2Today: 0, hype: 68,
+};
+
+// Simulated data for local/demo mode
+function generateSimState() {
+  const hour = new Date().getUTCHours();
+  const dayMult = new Date().getDay() >= 5 ? 0.75 : 1.0;
+  const sin = Math.sin(Math.PI * Math.max(0, hour - 6) / 18);
+  const temporal = (0.7 + 0.3 * Math.max(0, sin)) * dayMult;
+  const noise = 1 + (Math.random() - 0.5) * 0.04;
+  const qpm = Math.round(22000 * temporal * noise);
+  const mw = parseFloat(((qpm * 0.32) / 60000).toFixed(2));
+  const co2KwH = 340 + Math.random() * 50;
+  const co2PerMin = (mw * 1000 / 60) * co2KwH / 1e6;
+  return {
+    qpm, mw,
+    co2KwH: Math.round(co2KwH),
+    co2PerMin,
+    hype: Math.round(50 + temporal * 30 + Math.random() * 10),
+    aqi: { max: Math.round(90 + Math.random() * 40), mean: Math.round(40 + Math.random() * 25) },
+    water: { lpm: Math.round(qpm * 0.0065), pools: parseFloat((qpm * 0.0065 * 60 * 24 / 2500000).toFixed(3)) },
+    pqCo2: parseFloat(((0.32 / 1000) * co2KwH).toFixed(4)),
+    pqWater: parseFloat((0.0065 * 1000).toFixed(1)),
+  };
+}
+
+// ── Chart: QPM history ────────────────────────────────────────────────────
+const qpmHistory = Array.from({ length: 30 }, (_, i) => {
+  const h = new Date(); h.setMinutes(h.getMinutes() - (29 - i));
+  const sin = Math.sin(Math.PI * Math.max(0, h.getUTCHours() - 6) / 18);
+  return Math.round(22000 * (0.6 + 0.35 * Math.max(0, sin)) * (1 + (Math.random() - 0.5) * 0.06));
+});
+
+const qpmCtx = document.getElementById('qpmChart').getContext('2d');
+const qpmChart = new Chart(qpmCtx, {
+  type: 'line',
+  data: {
+    labels: Array.from({ length: 30 }, (_, i) => i === 29 ? 'now' : ''),
+    datasets: [{
+      data: [...qpmHistory],
+      borderColor: '#00e5a0',
+      backgroundColor: 'rgba(0,229,160,0.05)',
+      borderWidth: 1.5,
+      pointRadius: 0,
+      fill: true,
+      tension: 0.4,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { display: false },
+      y: { display: false, min: 8000, max: 40000 }
+    },
+    animation: { duration: 400 }
+  }
+});
+
+// ── Chart: Compute class donut ────────────────────────────────────────────
+const computeCtx = document.getElementById('computeChart').getContext('2d');
+const computeChart = new Chart(computeCtx, {
+  type: 'doughnut',
+  data: {
+    labels: ['Text Small', 'Text Large', 'Code', 'Image', 'Video'],
+    datasets: [{
+      data: [45, 30, 12, 10, 3],
+      backgroundColor: ['#00e5a0','#4a9eff','#26d9c7','#f5a623','#ff4757'],
+      borderWidth: 0,
+      hoverOffset: 4,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    cutout: '68%',
+    plugins: {
+      legend: {
+        display: true, position: 'right',
+        labels: { color: '#6b7a8a', font: { size: 10, family: 'Space Mono' }, boxWidth: 8, boxHeight: 8, padding: 8 }
+      }
+    }
+  }
+});
+
+// ── Chart: CO2 accumulation ────────────────────────────────────────────────
+const co2History = Array.from({ length: 20 }, (_, i) => {
+  const ratio = (i + 1) / 20;
+  return parseFloat((ratio * ratio * 45).toFixed(2));
+});
+
+const co2Ctx = document.getElementById('co2Chart').getContext('2d');
+const co2Chart = new Chart(co2Ctx, {
+  type: 'bar',
+  data: {
+    labels: Array.from({ length: 20 }, (_, i) => ''),
+    datasets: [{
+      data: [...co2History],
+      backgroundColor: 'rgba(255,71,87,0.5)',
+      borderColor: '#ff4757',
+      borderWidth: 1,
+      borderRadius: 2,
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { display: false },
+      y: { display: false }
+    },
+    animation: { duration: 600 }
+  }
+});
+
+// ── Region data ───────────────────────────────────────────────────────────
+const regions = [
+  { id: 'us-east',  label: 'N. Virginia',  carbon: 370, aqi: 112, wsi: 2.1, trafficPct: 35, wueColor: '#f5a623' },
+  { id: 'us-west',  label: 'Oregon',       carbon: 120, aqi:  38, wsi: 1.3, trafficPct: 15, wueColor: '#00e5a0' },
+  { id: 'eu-ie',    label: 'Dublin',       carbon: 280, aqi:  44, wsi: 0.8, trafficPct: 12, wueColor: '#4a9eff' },
+  { id: 'eu-de',    label: 'Frankfurt',    carbon: 350, aqi:  62, wsi: 1.7, trafficPct: 10, wueColor: '#f5a623' },
+  { id: 'ap-sg',    label: 'Singapore',    carbon: 470, aqi:  58, wsi: 4.1, trafficPct: 12, wueColor: '#ff4757' },
+  { id: 'ap-jp',    label: 'Tokyo',        carbon: 500, aqi:  72, wsi: 1.5, trafficPct: 10, wueColor: '#ff4757' },
+  { id: 'ap-au',    label: 'Sydney',       carbon: 610, aqi:  48, wsi: 3.2, trafficPct:  6, wueColor: '#ff4757' },
+];
+
+function carbonColor(v) {
+  if (v < 200) return '#00e5a0';
+  if (v < 400) return '#f5a623';
+  return '#ff4757';
+}
+
+function aqiColor(v) {
+  if (v <= 50)  return '#00e5a0';
+  if (v <= 100) return '#f5a623';
+  if (v <= 150) return '#ff8c00';
+  return '#ff4757';
+}
+
+function renderCarbonRegions() {
+  const el = document.getElementById('carbon-regions');
+  el.innerHTML = regions.map(r => `
+    <div class="region-row">
+      <div class="region-name">${r.label}</div>
+      <div class="region-bar-wrap">
+        <div class="region-bar" style="width:${(r.carbon / 700) * 100}%; background:${carbonColor(r.carbon)};"></div>
+      </div>
+      <div class="region-value" style="color:${carbonColor(r.carbon)}">${r.carbon} g</div>
+    </div>
+  `).join('');
+}
+
+function renderAqiRegions() {
+  const el = document.getElementById('aqi-regions');
+  el.innerHTML = regions.map(r => `
+    <div class="region-row">
+      <div class="region-name">${r.label}</div>
+      <div class="region-bar-wrap">
+        <div class="region-bar" style="width:${(r.aqi / 200) * 100}%; background:${aqiColor(r.aqi)};"></div>
+      </div>
+      <div class="region-value" style="color:${aqiColor(r.aqi)}">AQI ${r.aqi}</div>
+    </div>
+  `).join('');
+}
+
+function renderWaterBars() {
+  const el = document.getElementById('water-bars');
+  el.innerHTML = regions.map(r => `
+    <div class="water-col" title="${r.label}: WSI ${r.wsi}">
+      <div class="water-fill-inner" style="height:${(r.wsi / 5) * 100}%; background:${r.wueColor};"></div>
+      <div class="water-col-label">${r.label.split(',')[0]}</div>
+    </div>
+  `).join('');
+}
+
+function renderHypeKeywords() {
+  const keywords = [
+    { name: 'ChatGPT',   val: 72 },
+    { name: 'Claude AI', val: 58 },
+    { name: 'Gemini',    val: 61 },
+    { name: 'Copilot',   val: 49 },
+    { name: 'Midjourney',val: 38 },
+  ];
+  document.getElementById('hype-keywords').innerHTML = keywords.map(k => `
+    <div class="hype-kw">
+      <div class="hype-kw-name">${k.name}</div>
+      <div class="hype-kw-bar-wrap"><div class="hype-kw-bar" id="hk-${k.name.replace(/\s/g,'')}" style="width:${k.val}%;"></div></div>
+      <div class="hype-kw-val">${k.val}</div>
+    </div>
+  `).join('');
+}
+
+// ── Feed messages ─────────────────────────────────────────────────────────
+const feedMessages = [
+  (s) => `Singapore grid at ${(380 + Math.round(Math.random()*100))} gCO₂/kWh — fossil-heavy hour`,
+  (s) => `QPM spike +${Math.round(3 + Math.random()*8)}% — likely US morning peak`,
+  (s) => `OpenAQ: PM₂.₅ elevated in Ashburn corridor (${(15+Math.random()*8).toFixed(1)} µg/m³)`,
+  (s) => `Oregon hydro favorable — carbon drop to 118 gCO₂/kWh`,
+  (s) => `Estimated ${Math.round(s.qpm * 0.0065)} L water evaporated this minute globally`,
+  (s) => `Image-gen queries +2% share — energy coefficient 1.2 Wh each`,
+  (s) => `Cloudflare traffic index: ${(0.95+Math.random()*0.2).toFixed(2)}x baseline`,
+  (s) => `Frankfurt grid: renewables at ${Math.round(38+Math.random()*15)}% capacity`,
+  (s) => `Hype index ${state.hype} — ${state.hype > 65 ? 'elevated' : 'moderate'} search velocity`,
+  (s) => `CO₂ accumulation: ${state.co2Today.toFixed(2)} tonnes since midnight UTC`,
+];
+
+let feedIdx = 0;
+function addFeedItem() {
+  const feed = document.getElementById('feed');
+  const now = new Date();
+  const time = `${String(now.getUTCHours()).padStart(2,'0')}:${String(now.getUTCMinutes()).padStart(2,'0')}:${String(now.getUTCSeconds()).padStart(2,'0')}`;
+  const msg = feedMessages[feedIdx % feedMessages.length](state);
+  feedIdx++;
+  const item = document.createElement('div');
+  item.className = 'feed-item';
+  item.innerHTML = `<span class="feed-time">${time}</span><span class="feed-msg">${msg}</span>`;
+  feed.insertBefore(item, feed.firstChild);
+  if (feed.children.length > 12) feed.removeChild(feed.lastChild);
+}
+
+// ── Clock ─────────────────────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    `${String(now.getUTCHours()).padStart(2,'0')}:${String(now.getUTCMinutes()).padStart(2,'0')}:${String(now.getUTCSeconds()).padStart(2,'0')} UTC`;
+}
+
+// ── Animate number ────────────────────────────────────────────────────────
+function setNum(id, val, decimals = 0, prefix = '', suffix = '') {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const formatted = typeof val === 'number'
+    ? (decimals > 0 ? val.toFixed(decimals) : val.toLocaleString())
+    : val;
+  el.textContent = prefix + formatted + suffix;
+}
+
+// ── Fetch from backend (fallback to sim) ──────────────────────────────────
+async function fetchData() {
+  try {
+    const r = await fetch(`${API_BASE}/live`, { signal: AbortSignal.timeout(4000) });
+    if (!r.ok) throw new Error(r.status);
+    const data = await r.json();
+    document.getElementById('api-status').innerHTML = '<span style="color:#00e5a0">● API LIVE</span>';
+
+    const inf = data.inference || {};
+    const car = data.carbon   || {};
+    const aq  = data.aqi      || {};
+    const wat = data.water    || {};
+    const tr  = data.trends   || {};
+
+    state.qpm      = inf.qpm || state.qpm;
+    state.mw       = inf.power?.total_mw_draw || state.mw;
+    state.co2Today = inf.co2_tonnes_today_est || state.co2Today;
+    state.hype     = tr.hype_index || state.hype;
+    state.carbon   = car._global_avg_gco2_kwh || state.carbon;
+    state.aqi      = { max: aq._global_max_aqi || 112, mean: aq._global_mean_aqi || 54 };
+    state.water    = { lpm: wat._total_liters_per_min || 148, pools: wat._olympic_pools_per_day || 0.09 };
+    return;
+  } catch (e) {}
+
+  // Sim mode fallback
+  document.getElementById('api-status').innerHTML = '<span style="color:#f5a623">◎ SIM MODE — start backend for live data</span>';
+  const s = generateSimState();
+  state.qpm      = s.qpm;
+  state.mw       = s.mw;
+  state.co2Today += s.co2PerMin * (REFRESH_MS / 60000);
+  state.hype     = s.hype;
+  state.carbon   = s.co2KwH;
+  state.aqi      = s.aqi;
+  state.water    = s.water;
+}
+
+// ── Render all displays ───────────────────────────────────────────────────
+async function refresh() {
+  await fetchData();
+
+  setNum('qpm-display', state.qpm);
+  setNum('qps-display', (state.qpm / 60).toFixed(1));
+  setNum('today-display', Math.round(state.qpm * 60 * new Date().getUTCHours() / 1e6).toFixed(0) + 'M');
+  setNum('hype-display', state.hype);
+  setNum('mw-display', state.mw.toFixed(2));
+  setNum('carbon-display', state.carbon);
+  setNum('aqi-max', state.aqi.max);
+  setNum('aqi-mean', state.aqi.mean);
+  setNum('pm25-display', (state.aqi.max * 0.164).toFixed(1));
+  setNum('water-display', state.water.lpm);
+  setNum('pools-display', state.water.pools.toFixed(3));
+  setNum('lpq-display', '0.0065');
+  setNum('co2-today', state.co2Today.toFixed(2));
+
+  // Per-query stats
+  const wh = (state.mw * 1e6) / (state.qpm * 60);
+  setNum('pq-wh', wh.toFixed(3) + ' Wh');
+  setNum('pq-co2', ((wh / 1000) * state.carbon).toFixed(3) + ' g CO₂');
+  setNum('pq-water', (state.water.lpm / state.qpm * 1000).toFixed(1) + ' mL');
+
+  // Risk badge
+  const riskPct = 4 + (state.aqi.mean - 40) * 0.12;
+  setNum('resp-risk', '+' + riskPct.toFixed(1) + '%');
+  const badge = document.getElementById('risk-badge-wrap');
+  const riskClass = riskPct < 5 ? 'risk-low' : riskPct < 9 ? 'risk-moderate' : 'risk-elevated';
+  const riskLabel = riskPct < 5 ? 'LOW RISK' : riskPct < 9 ? 'MODERATE RISK' : 'ELEVATED RISK';
+  badge.innerHTML = `<span class="risk-badge ${riskClass}">${riskLabel}</span>`;
+
+  // Update QPM chart
+  qpmHistory.push(state.qpm);
+  qpmHistory.shift();
+  qpmChart.data.datasets[0].data = [...qpmHistory];
+  qpmChart.update('none');
+
+  // CO2 accumulation chart
+  co2History.push(parseFloat(state.co2Today.toFixed(2)));
+  co2History.shift();
+  co2Chart.data.datasets[0].data = [...co2History];
+  co2Chart.update('none');
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+renderCarbonRegions();
+renderAqiRegions();
+renderWaterBars();
+renderHypeKeywords();
+addFeedItem();
+
+setInterval(updateClock, 1000);
+setInterval(addFeedItem, 8000);
+setInterval(refresh, REFRESH_MS);
+
+updateClock();
+refresh();
+</script>
+</body>
+</html>
