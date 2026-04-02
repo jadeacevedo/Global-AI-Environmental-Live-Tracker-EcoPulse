@@ -9,6 +9,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+import os
 
 from collectors.carbon import CarbonCollector
 from collectors.air_quality import AirQualityCollector
@@ -61,6 +64,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.mount("/static", StaticFiles(directory="../frontend"), name="static")
+
 # ── Inject shared state into routers ─────────────────────────────────────────
 app.state.data = state
 
@@ -76,8 +81,8 @@ async def health():
     return {"status": "ok", "last_updated": state.get("last_updated")}
 
 @app.get("/")
-async def root():
-    return {"status": "ok", "service": "EcoPulse AI", "ready": True}
+def read_root():
+    return FileResponse(os.path.join("../frontend", "index.html"))
 
 
 @app.get("/api/live")

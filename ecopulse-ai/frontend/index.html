@@ -1,8 +1,4 @@
-from fastapi.staticfiles import StaticFiles
-from pathlib import Path
-
-BASE_DIR = Path(__file__).resolve().parent.parent
-app.mount("/", StaticFiles(directory=str(BASE_DIR / "frontend"), html=True), name="frontend")<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
